@@ -1,136 +1,195 @@
 <ion-app>
   <ion-router-outlet></ion-router-outlet>
-  <ion-content [fullscreen]="true" class="ion-padding app-container">
-    
-    <div class="main-grid-wrapper">
-      
+  <ion-content [fullscreen]="true">
+
+    <div
+      class="grid h-full grid-cols-1 gap-4 bg-ios-bg px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] font-sans text-black landscape:grid-cols-2 dark:bg-black dark:text-white">
+
       <!-- COLUMN 1: CALCULATOR & HISTORY -->
-      <div class="calculator-pane">
-        <div class="calc-header">
-          <div class="brand">
-            <ion-icon name="calculator-outline" color="primary"></ion-icon>
-            <h2>CalcBoard Duo</h2>
+      <section class="relative flex h-full min-h-0 flex-col">
+
+        <!-- Header -->
+        <header class="flex items-center justify-between px-1 py-1">
+          <div class="flex items-center gap-2">
+            <ion-icon name="calculator-outline" class="text-2xl text-ios-blue"></ion-icon>
+            <h1 class="text-xl font-semibold tracking-tight">CalcBoard Duo</h1>
           </div>
-          <ion-button fill="clear" size="small" (click)="showHistory.set(!showHistory())">
-            <ion-icon name="time-outline" slot="icon-only"></ion-icon>
-            <ion-badge color="tertiary" *ngIf="history().length > 0">{{ history().length }}</ion-badge>
-          </ion-button>
-        </div>
 
-        <!-- History Overlay / Drawer -->
-        <div class="history-drawer" *ngIf="showHistory()">
-          <div class="history-header">
-            <h3>Computation History</h3>
-            <div>
-              <ion-button fill="clear" size="small" color="danger" (click)="clearHistory()">
-                <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
-              </ion-button>
-              <ion-button fill="clear" size="small" (click)="showHistory.set(false)">
-                <ion-icon name="close-outline" slot="icon-only"></ion-icon>
-              </ion-button>
+          <button
+            type="button"
+            class="relative flex size-10 items-center justify-center rounded-full text-ios-blue transition active:bg-black/5 dark:active:bg-white/10"
+            aria-label="Toggle history"
+            (click)="showHistory.set(!showHistory())">
+            <ion-icon name="time-outline" class="text-2xl"></ion-icon>
+            @if (history().length > 0) {
+              <span
+                class="absolute top-0.5 right-0.5 flex min-w-4 items-center justify-center rounded-full bg-ios-orange px-1 text-[10px] leading-4 font-semibold text-white">
+                {{ history().length }}
+              </span>
+            }
+          </button>
+        </header>
+
+        <!-- History drawer (frosted panel) -->
+        @if (showHistory()) {
+          <div
+            class="absolute inset-x-0 top-14 z-10 flex max-h-[70%] flex-col overflow-hidden rounded-2xl bg-white/70 shadow-xl ring-1 ring-black/5 backdrop-blur-xl dark:bg-neutral-900/70 dark:ring-white/10">
+            <div class="flex items-center justify-between border-b border-black/10 px-4 py-2 dark:border-white/10">
+              <h2 class="text-base font-semibold">History</h2>
+              <div class="flex items-center">
+                <button
+                  type="button"
+                  class="flex size-9 items-center justify-center rounded-full text-red-500 active:bg-black/5 dark:active:bg-white/10"
+                  aria-label="Clear history"
+                  (click)="clearHistory()">
+                  <ion-icon name="trash-outline" class="text-xl"></ion-icon>
+                </button>
+                <button
+                  type="button"
+                  class="flex size-9 items-center justify-center rounded-full text-ios-blue active:bg-black/5 dark:active:bg-white/10"
+                  aria-label="Close history"
+                  (click)="showHistory.set(false)">
+                  <ion-icon name="close-outline" class="text-xl"></ion-icon>
+                </button>
+              </div>
             </div>
+
+            <ul class="overflow-y-auto">
+              @for (item of history(); track $index) {
+                <li class="border-b border-black/5 last:border-b-0 dark:border-white/10">
+                  <button
+                    type="button"
+                    class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:bg-black/5 dark:active:bg-white/10"
+                    (click)="useHistoryItem(item)">
+                    <span class="min-w-0">
+                      <span class="block truncate text-sm text-neutral-500 dark:text-neutral-400">{{ item.expression }}</span>
+                      <span class="block truncate text-lg font-medium">= {{ item.result }}</span>
+                    </span>
+                    <span class="shrink-0 text-xs text-neutral-500 dark:text-neutral-400">{{ item.timestamp }}</span>
+                  </button>
+                </li>
+              } @empty {
+                <li class="px-4 py-6 text-center text-sm text-neutral-500 dark:text-neutral-400">
+                  No calculations yet. Press = to save one here.
+                </li>
+              }
+            </ul>
           </div>
-          <ion-list lines="none" class="history-list">
-            <ion-item *ngFor="let item of history()" (click)="useHistoryItem(item)" button detail="false">
-              <ion-label>
-                <p>{{ item.expression }}</p>
-                <h3>= {{ item.result }}</h3>
-              </ion-label>
-              <span slot="end" class="time-stamp">{{ item.timestamp }}</span>
-            </ion-item>
-            <div class="empty-history" *ngIf="history().length === 0">
-              <p>No recent history</p>
-            </div>
-          </ion-list>
+        }
+
+        <!-- Display -->
+        <div class="flex min-h-0 flex-1 flex-col justify-end px-2 pb-4 text-right">
+          <div class="min-h-6 truncate text-lg text-neutral-500 dark:text-neutral-400">{{ equationString() }}</div>
+          <div
+            class="font-light tracking-tight break-all tabular-nums"
+            [class]="resultSize()"
+            aria-live="polite">
+            {{ displayValue() }}
+          </div>
         </div>
 
-        <!-- Calculator Display Screen -->
-        <div class="display-screen">
-          <div class="equation-preview">{{ equationString() }}</div>
-          <div class="main-result">{{ displayValue() }}</div>
+        <!-- Keypad -->
+        <div class="mx-auto grid w-full max-w-sm grid-cols-4 gap-3">
+          @for (key of keys; track key.label) {
+            <button
+              type="button"
+              class="flex items-center justify-center rounded-full text-3xl shadow-sm transition select-none active:scale-95 active:brightness-90"
+              [class]="keyClasses(key)"
+              [attr.aria-label]="key.aria ?? key.label"
+              (click)="key.run()">
+              @if (key.icon) {
+                <ion-icon [name]="key.icon"></ion-icon>
+              } @else {
+                {{ key.label }}
+              }
+            </button>
+          }
         </div>
+      </section>
 
-        <!-- Calculator Keypad Grid -->
-        <div class="keypad-grid">
-          <ion-button color="light" expand="block" class="btn-action" (click)="clearAll()">AC</ion-button>
-          <ion-button color="light" expand="block" class="btn-action" (click)="backspace()">
-            <ion-icon name="backspace-outline" slot="icon-only"></ion-icon>
-          </ion-button>
-          <ion-button color="light" expand="block" class="btn-action" (click)="appendOperator('%')">%</ion-button>
-          <ion-button color="primary" expand="block" class="btn-op" (click)="appendOperator('÷')">÷</ion-button>
+      <!-- COLUMN 2: SKETCHPAD (hidden in portrait) -->
+      <section
+        class="relative hidden h-full min-h-0 overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-black/5 landscape:block">
 
-          <ion-button color="medium" expand="block" (click)="appendNumber('7')">7</ion-button>
-          <ion-button color="medium" expand="block" (click)="appendNumber('8')">8</ion-button>
-          <ion-button color="medium" expand="block" (click)="appendNumber('9')">9</ion-button>
-          <ion-button color="primary" expand="block" class="btn-op" (click)="appendOperator('×')">×</ion-button>
+        <!-- Floating translucent toolbar -->
+        <div
+          class="absolute inset-x-3 top-3 z-10 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-2xl bg-white/70 px-3 py-2 shadow-lg ring-1 ring-black/5 backdrop-blur-xl dark:bg-neutral-900/70 dark:text-white dark:ring-white/10">
 
-          <ion-button color="medium" expand="block" (click)="appendNumber('4')">4</ion-button>
-          <ion-button color="medium" expand="block" (click)="appendNumber('5')">5</ion-button>
-          <ion-button color="medium" expand="block" (click)="appendNumber('6')">6</ion-button>
-          <ion-button color="primary" expand="block" class="btn-op" (click)="appendOperator('-')">-</ion-button>
-
-          <ion-button color="medium" expand="block" (click)="appendNumber('1')">1</ion-button>
-          <ion-button color="medium" expand="block" (click)="appendNumber('2')">2</ion-button>
-          <ion-button color="medium" expand="block" (click)="appendNumber('3')">3</ion-button>
-          <ion-button color="primary" expand="block" class="btn-op" (click)="appendOperator('+')">+</ion-button>
-
-          <ion-button color="medium" expand="block" class="btn-zero" (click)="appendNumber('0')">0</ion-button>
-          <ion-button color="medium" expand="block" (click)="appendNumber('.')">.</ion-button>
-          <ion-button color="success" expand="block" class="btn-equals" (click)="calculate()">=</ion-button>
-        </div>
-      </div>
-
-      <!-- COLUMN 2: BLACKBOARD / SKETCHPAD (Hidden in Portrait) -->
-      <div class="sketchpad-pane">
-        <div class="sketch-toolbar">
-          <div class="tools-group">
-            <ion-button 
-              [fill]="activeTool() === 'pen' ? 'solid' : 'outline'" 
-              size="small" 
+          <!-- Segmented control -->
+          <div class="flex rounded-lg bg-black/5 p-0.5 text-sm dark:bg-white/10" role="group" aria-label="Tool">
+            <button
+              type="button"
+              class="rounded-md px-3 py-1 transition"
+              [class]="activeTool() === 'pen' ? 'bg-white font-medium text-black shadow dark:bg-neutral-600 dark:text-white' : ''"
               (click)="activeTool.set('pen')">
-              <ion-icon name="brush-outline" slot="start"></ion-icon> Pen
-            </ion-button>
-            <ion-button 
-              [fill]="activeTool() === 'eraser' ? 'solid' : 'outline'" 
-              size="small" 
-              color="warning"
+              Pen
+            </button>
+            <button
+              type="button"
+              class="rounded-md px-3 py-1 transition"
+              [class]="activeTool() === 'eraser' ? 'bg-white font-medium text-black shadow dark:bg-neutral-600 dark:text-white' : ''"
               (click)="activeTool.set('eraser')">
               Eraser
-            </ion-button>
+            </button>
           </div>
 
-          <!-- Color Palette (Active only for Pen) -->
-          <div class="color-picker" *ngIf="activeTool() === 'pen'">
-            <span 
-              *ngFor="let col of colors" 
-              [style.background-color]="col" 
-              [class.active]="penColor() === col"
-              (click)="penColor.set(col)">
-            </span>
-          </div>
+          <!-- Pen options -->
+          @if (activeTool() === 'pen') {
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2">
+                @for (col of colors; track col) {
+                  <button
+                    type="button"
+                    class="size-6 rounded-full ring-ios-blue ring-offset-2 ring-offset-white dark:ring-offset-neutral-900"
+                    [class]="penColor() === col ? 'ring-2' : ''"
+                    [style.background-color]="col"
+                    [attr.aria-label]="'Pen color ' + col"
+                    (click)="penColor.set(col)"></button>
+                }
+              </div>
+              <div class="flex items-center gap-1">
+                @for (s of sizes; track s) {
+                  <button
+                    type="button"
+                    class="flex size-7 items-center justify-center rounded-full"
+                    [class]="penSize() === s ? 'bg-black/10 dark:bg-white/20' : ''"
+                    [attr.aria-label]="'Pen size ' + s"
+                    (click)="penSize.set(s)">
+                    <span class="rounded-full bg-current" [style.width.px]="s + 3" [style.height.px]="s + 3"></span>
+                  </button>
+                }
+              </div>
+            </div>
+          }
 
-          <div class="actions-group">
-            <ion-button fill="clear" size="small" (click)="undoCanvas()" title="Undo">
-              <ion-icon name="arrow-undo-outline" slot="icon-only"></ion-icon>
-            </ion-button>
-            <ion-button fill="clear" size="small" color="danger" (click)="clearCanvas()" title="Clear Blackboard">
-              <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
-            </ion-button>
+          <div class="flex items-center">
+            <button
+              type="button"
+              class="flex size-9 items-center justify-center rounded-full text-ios-blue active:bg-black/5 dark:active:bg-white/10"
+              aria-label="Undo"
+              (click)="undoCanvas()">
+              <ion-icon name="arrow-undo-outline" class="text-xl"></ion-icon>
+            </button>
+            <button
+              type="button"
+              class="flex size-9 items-center justify-center rounded-full text-red-500 active:bg-black/5 dark:active:bg-white/10"
+              aria-label="Clear blackboard"
+              (click)="clearCanvas()">
+              <ion-icon name="trash-outline" class="text-xl"></ion-icon>
+            </button>
           </div>
         </div>
 
-        <div class="canvas-wrapper">
-          <canvas #sketchCanvas
-            (mousedown)="startDrawing($event)"
-            (mousemove)="draw($event)"
-            (mouseup)="stopDrawing()"
-            (mouseleave)="stopDrawing()"
-            (touchstart)="startDrawing($event)"
-            (touchmove)="draw($event)"
-            (touchend)="stopDrawing()">
-          </canvas>
-        </div>
-      </div>
+        <!-- Canvas -->
+        <canvas
+          #sketchCanvas
+          class="block h-full w-full touch-none select-none"
+          (pointerdown)="startDrawing($event)"
+          (pointermove)="draw($event)"
+          (pointerup)="stopDrawing($event)"
+          (pointercancel)="stopDrawing($event)">
+        </canvas>
+      </section>
 
     </div>
 

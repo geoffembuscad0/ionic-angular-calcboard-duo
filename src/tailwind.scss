@@ -1,0 +1,13 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme {
+  --font-sans: -apple-system, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+  --color-ios-blue: #007aff;
+  --color-ios-orange: #ff9f0a;
+  --color-ios-bg: #f2f2f7;
+  --color-ios-fill: #d1d1d6;
+  --color-ios-key: #333333;
+  --color-ios-fn: #a5a5a5;
+}
