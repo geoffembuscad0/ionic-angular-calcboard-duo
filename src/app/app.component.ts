@@ -1,12 +1,9 @@
-import { Component, ElementRef, ViewChild, OnDestroy, AfterViewInit, signal, computed } from '@angular/core';
+import { Component, ElementRef, ViewChild, OnDestroy, AfterViewInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   IonApp,
   IonRouterOutlet,
   IonContent,
-  IonGrid,
-  IonRow,
-  IonCol,
   IonButton,
   IonIcon,
   IonBadge,
@@ -22,7 +19,6 @@ import {
   brushOutline,
   calculatorOutline,
   timeOutline,
-  checkmarkOutline,
   closeOutline
 } from 'ionicons/icons';
 
@@ -36,8 +32,8 @@ interface HistoryItem {
   selector: 'app-root',
   standalone: true,
   imports: [
-    CommonModule, IonApp, IonRouterOutlet, IonContent, IonGrid, IonRow, 
-    IonCol, IonButton, IonIcon, IonBadge, IonItem, IonLabel, IonList
+    CommonModule, IonApp, IonRouterOutlet, IonContent,
+    IonButton, IonIcon, IonBadge, IonItem, IonLabel, IonList
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
@@ -62,7 +58,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   penSize = signal(3);
   
   colors = ['#1c1c1e', '#007aff', '#34c759', '#ff9500', '#ff2d55']; // iOS
-  sizes = [2, 5, 10];
 
   constructor() {
     addIcons({
@@ -72,7 +67,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       brushOutline,
       calculatorOutline,
       timeOutline,
-      checkmarkOutline,
       closeOutline
     });
   }
@@ -194,6 +188,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     const pos = this.getEventPos(event);
     this.ctx.beginPath();
     this.ctx.moveTo(pos.x, pos.y);
+    this.ctx.lineCap = 'round';
+    this.ctx.lineJoin = 'round';
   }
 
   draw(event: MouseEvent | TouchEvent) {
@@ -201,11 +197,9 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     event.preventDefault();
     const pos = this.getEventPos(event);
 
-    this.ctx.lineTo(pos.x, pos.y);
     this.ctx.strokeStyle = this.activeTool() === 'eraser' ? '#ffffff' : this.penColor();
     this.ctx.lineWidth = this.activeTool() === 'eraser' ? 24 : this.penSize();
-    this.ctx.lineCap = 'round';
-    this.ctx.lineJoin = 'round';
+    this.ctx.lineTo(pos.x, pos.y);
     this.ctx.stroke();
   }
 
@@ -247,7 +241,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    if (this.undoStack.length >= 15) {
+    if (this.undoStack.length >= 8) {
       this.undoStack.shift();
     }
 
@@ -263,7 +257,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   undoCanvas() {
     if (this.undoStack.length > 1) {
-      this.undoStack.pop(); // Remove current state
+      this.undoStack.pop();
       const previousState = this.undoStack[this.undoStack.length - 1];
       this.ctx.putImageData(previousState, 0, 0);
     }
@@ -273,10 +267,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     const canvas = this.canvasRef.nativeElement;
     if (!this.ctx || canvas.width <= 0 || canvas.height <= 0) return;
 
-    this.ctx.fillStyle = '#ffffff'; // Updated from #1e293b to white
+    this.ctx.fillStyle = '#ffffff';
     this.ctx.fillRect(0, 0, canvas.width, canvas.height);
     this.saveState();
   }
+
   ngOnDestroy() {
     this.resizeObserver?.disconnect();
   }
